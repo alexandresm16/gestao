@@ -30,6 +30,11 @@ class _MeusGastosPageState extends State<MeusGastosPage> {
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> gastos = gastosPorMes[_mesSelecionado] ?? [];
 
+    double totalGasto = gastos.fold(
+      0.0,
+          (soma, item) => soma + (item['valor'] as double),
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meus Gastos'),
@@ -66,6 +71,22 @@ class _MeusGastosPageState extends State<MeusGastosPage> {
               ],
             ),
             const SizedBox(height: 16),
+
+            // Total gasto no mês
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "Total gasto em $_mesSelecionado: R\$ ${totalGasto.toStringAsFixed(2)}",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Lista de gastos
             Expanded(
               child: gastos.isEmpty
                   ? const Center(child: Text("Nenhum gasto encontrado."))
