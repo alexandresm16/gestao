@@ -91,8 +91,17 @@ class HomePage extends StatelessWidget {
                   TransactionTile(title: "Mercado", amount: -80, date: "19 Mai"),
                   TransactionTile(title: "Uber", amount: -25, date: "18 Mai"),
                   TransactionTile(title: "Restaurante", amount: -50, date: "17 Mai"),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Text("Limites", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),
+                  ),
                   GoalCard(category: "Alimentação", maxAmount: 500, spentAmount: 320),
                   GoalCard(category: "Lazer", maxAmount: 300, spentAmount: 180),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 22),
+                    child: Text("Meta do mês", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),
+                  ),
+                  GoalCard(category: "Janeiro", maxAmount: 3000, spentAmount: 500),
                 ],
               ),
             ),
@@ -162,7 +171,7 @@ class GoalCard extends StatelessWidget {
         subtitle: LinearProgressIndicator(
           value: percent,
           backgroundColor: Colors.grey[300],
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
         ),
         trailing: Text("${spentAmount.toStringAsFixed(0)} / ${maxAmount.toStringAsFixed(0)}"),
       ),
