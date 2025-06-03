@@ -1,4 +1,7 @@
 import 'package:app/screens/despesas.dart';
+import 'package:app/screens/meus_gastos.dart';
+import 'package:app/screens/metas.dart';
+import 'package:app/screens/limites.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatelessWidget {
@@ -13,12 +16,71 @@ class HomePage extends StatelessWidget {
         centerTitle: true,
         backgroundColor: Colors.green[600],
       ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.green[600],
+              ),
+              child: const Text(
+                'Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.add),
+              title: const Text('Lançar Gastos'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NovaDespesaPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.list),
+              title: const Text('Meus Gastos'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MeusGastosPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag),
+              title: const Text('Metas'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MetasPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.speed),
+              title: const Text('Limites'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LimitesPage()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               "Últimas Despesas",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
@@ -29,7 +91,6 @@ class HomePage extends StatelessWidget {
                   TransactionTile(title: "Mercado", amount: -80, date: "19 Mai"),
                   TransactionTile(title: "Uber", amount: -25, date: "18 Mai"),
                   TransactionTile(title: "Restaurante", amount: -50, date: "17 Mai"),
-                  // Cards de Metas
                   GoalCard(category: "Alimentação", maxAmount: 500, spentAmount: 320),
                   GoalCard(category: "Lazer", maxAmount: 300, spentAmount: 180),
                 ],
@@ -54,7 +115,7 @@ class HomePage extends StatelessWidget {
 
 class TransactionTile extends StatelessWidget {
   final String title;
-  final double amount;
+  final int amount;
   final String date;
 
   const TransactionTile({
@@ -66,23 +127,13 @@ class TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool isExpense = amount < 0;
-    return Card(
-      color: isExpense ? Colors.red[50] : Colors.green[50],
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: Icon(
-          Icons.arrow_upward,
-          color: isExpense ? Colors.red : Colors.green,
-        ),
-        title: Text(title),
-        subtitle: Text(date),
-        trailing: Text(
-          "- R\$ ${amount.abs().toStringAsFixed(2)}",
-          style: TextStyle(
-            color: isExpense ? Colors.red : Colors.green,
-            fontWeight: FontWeight.bold,
-          ),
+    return ListTile(
+      title: Text(title),
+      subtitle: Text(date),
+      trailing: Text(
+        'R\$ ${amount.toString()}',
+        style: TextStyle(
+          color: amount < 0 ? Colors.red : Colors.green,
         ),
       ),
     );
@@ -91,8 +142,8 @@ class TransactionTile extends StatelessWidget {
 
 class GoalCard extends StatelessWidget {
   final String category;
-  final double maxAmount; // Valor máximo que pode ser gasto
-  final double spentAmount; // Valor já gasto
+  final double maxAmount;
+  final double spentAmount;
 
   const GoalCard({
     required this.category,
@@ -103,35 +154,21 @@ class GoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double remainingAmount = maxAmount - spentAmount; // Cálculo do restante da meta
+    final percent = (spentAmount / maxAmount).clamp(0.0, 1.0);
 
     return Card(
-      color: Colors.blue[50],
-      margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
-        title: Text(
-          category,
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(category),
+        subtitle: LinearProgressIndicator(
+          value: percent,
+          backgroundColor: Colors.grey[300],
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
         ),
-        subtitle: Text("Meta para o mês"),
-        trailing: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              "R\$ ${spentAmount.toStringAsFixed(2)} / R\$ ${maxAmount.toStringAsFixed(2)}",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              "Restante: R\$ ${remainingAmount.toStringAsFixed(2)}",
-              style: TextStyle(
-                color: remainingAmount < 0 ? Colors.red : Colors.green,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+        trailing: Text("${spentAmount.toStringAsFixed(0)} / ${maxAmount.toStringAsFixed(0)}"),
       ),
     );
   }
 }
+
+
+
