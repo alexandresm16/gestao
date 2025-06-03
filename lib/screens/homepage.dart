@@ -1,14 +1,21 @@
+import 'package:app/database/despesa_dao.dart';
+import 'package:app/model/despesa_model.dart';
 import 'package:app/screens/despesas.dart';
 import 'package:app/screens/meus_gastos.dart';
 import 'package:app/screens/metas.dart';
 import 'package:app/screens/limites.dart';
 import 'package:flutter/material.dart';
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+class HomePage extends StatefulWidget {
+  @override
+  State<HomePage> createState() => _DespesaListState();
+}
 
+class _DespesaListState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
+
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -38,7 +45,7 @@ class HomePage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const NovaDespesaPage()),
+                  MaterialPageRoute(builder: (_) => NovaDespesaPage()),
                 );
               },
             ),
@@ -88,9 +95,6 @@ class HomePage extends StatelessWidget {
             Expanded(
               child: ListView(
                 children: const [
-                  TransactionTile(title: "Mercado", amount: -80, date: "19 Mai"),
-                  TransactionTile(title: "Uber", amount: -25, date: "18 Mai"),
-                  TransactionTile(title: "Restaurante", amount: -50, date: "17 Mai"),
                   Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Text("Limites", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),
@@ -112,38 +116,102 @@ class HomePage extends StatelessWidget {
         backgroundColor: Colors.green[600],
         child: const Icon(Icons.add),
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const NovaDespesaPage()),
-          );
+          Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => NovaDespesaPage()
+          )).then((value){
+
+            setState(() {
+              debugPrint('RETORNOU DO ADD DESPESA');
+            });
+
+          });
+
+          setState(() {
+            debugPrint('ADICIONAR DESPESA.........');
+          });
         },
       ),
     );
   }
+
+  Widget _futureBuilderDespesa() {
+    return FutureBuilder<List<DespesaModel>>(
+      initialData: const <DespesaModel>[],
+      future: DespesaDAO().getDespesa(),
+      builder: (context, snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+            return const Center(child: Text('Sem conexão'));
+          case ConnectionState.waiting:
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: const [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Carregando...'),
+                ],
+              ),
+            );
+          case ConnectionState.active:
+            return const Center(child: Text('Conexão ativa...'));
+          case ConnectionState.done:
+            if (snapshot.hasError) {
+              return const Center(child: Text('Erro ao carregar os dados.'));
+            }
+
+            final List<DespesaModel> despesa = snapshot.data ?? [];
+
+            if (despesa.isEmpty) {
+              return const Center(child: Text('Nenhum lançamento encontrado.'));
+            }
+
+            return ListView.builder(
+              itemCount: despesa.length,
+              itemBuilder: (context, index) {
+                final DespesaModel d = despesa[index];
+                return ItemDespesa(
+                  d,
+                  onClick: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => NovaDespesaPage(despesa: d,),
+                      ),
+                    ).then((value) {
+                      setState(() {
+                        debugPrint('...........Voltou do editar');
+                      });
+                    });
+                  },
+                );
+              },
+            );
+        }
+      },
+    );
+  }
+
 }
 
-class TransactionTile extends StatelessWidget {
-  final String title;
-  final int amount;
-  final String date;
 
-  const TransactionTile({
-    required this.title,
-    required this.amount,
-    required this.date,
-    super.key,
-  });
+
+
+class ItemDespesa extends StatelessWidget {
+  final DespesaModel _despesa;
+  final Function onClick;
+
+  ItemDespesa(this._despesa, {required this.onClick});
+
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      title: Text(title),
-      subtitle: Text(date),
+      onTap: () => this.onClick(),
+      title: Text(this._despesa.titulo),
+      subtitle: Text('Data: ${_despesa.data.day}/${_despesa.data..month}/${_despesa.data..year}'),
       trailing: Text(
-        'R\$ ${amount.toString()}',
-        style: TextStyle(
-          color: amount < 0 ? Colors.red : Colors.green,
-        ),
+        'R\$ ${this._despesa.valor.toString()}',
       ),
     );
   }

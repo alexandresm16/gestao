@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../model/despesa_model.dart';
+
 class NovaDespesaPage extends StatefulWidget {
-  const NovaDespesaPage({super.key});
+  int? index;
+  DespesaModel? despesa;
+
+  NovaDespesaPage({this.despesa}) {
+    if (despesa == null) {
+      index = -1;
+    } else {
+      index = despesa!.id;
+      this.despesa = despesa;
+    }
+  }
 
   @override
   State<NovaDespesaPage> createState() => _NovaDespesaPageState();
