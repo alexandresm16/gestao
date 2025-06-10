@@ -90,25 +90,34 @@ class _DespesaListState extends State<HomePage> {
             const SizedBox(height: 10),
             Expanded(
               child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text("Últimas Despesas", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  const Text(
+                    "Últimas Despesas",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
+                  const SizedBox(height: 16),
                   _futureBuilderDespesa(),
+
+                  const SizedBox(height: 32),
 
                   const Text(
                     "Limites",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
+                  const SizedBox(height: 16),
 
                   const GoalCard(category: "Alimentação", maxAmount: 500, spentAmount: 320),
                   const GoalCard(category: "Lazer", maxAmount: 300, spentAmount: 180),
 
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 22),
-                    child: Text("Meta do mês", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 32),
+
+                  const Text(
+                    "Meta do mês",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
+                  const SizedBox(height: 16),
+
                   const GoalCard(category: "Janeiro", maxAmount: 3000, spentAmount: 500),
                 ],
               ),
