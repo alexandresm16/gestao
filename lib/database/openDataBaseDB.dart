@@ -4,13 +4,17 @@ import 'despesa_dao.dart';
 
 
 Future<Database> getDatabase() async {
-  final String path = join(await getDatabasesPath(), 'dbcovid2.db');
+  final String path = join(await getDatabasesPath(), 'dbgestao1.db');
 
   return openDatabase(
     path,
+    version: 3, // aumente para forçar upgrade
     onCreate: (db, version) {
       db.execute(DespesaDAO.sqlTabelaDespesa);
     },
-    version: 1,
+    onUpgrade: (db, oldVersion, newVersion) {
+      // Cria a tabela se não existir
+      db.execute(DespesaDAO.sqlTabelaDespesa);
+    },
   );
 }

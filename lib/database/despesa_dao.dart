@@ -16,9 +16,9 @@ class DespesaDAO {
   static const String sqlTabelaDespesa = 'CREATE TABLE $_nomeTabela ('
       '$_col_id INTEGER PRIMARY KEY, '
       '$_col_titulo TEXT, '
-      '$_col_valor TEXT, '
+      '$_col_valor REAL, '
       '$_col_categoria TEXT, '
-      '$_col_data INTEGER, )';
+      '$_col_data INTEGER)';
 
 
   adicionar(DespesaModel d) async {
@@ -48,7 +48,7 @@ class DespesaDAO {
         maps[i][_col_titulo],
         maps[i][_col_valor],
         maps[i][_col_categoria],
-        maps[i][_col_data],
+        DateTime.fromMillisecondsSinceEpoch(maps[i][_col_data]),
       );
     });
 

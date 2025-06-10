@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
+import '../database/despesa_dao.dart';
 import '../model/despesa_model.dart';
 
 class NovaDespesaPage extends StatefulWidget {
@@ -27,6 +27,19 @@ class _NovaDespesaPageState extends State<NovaDespesaPage> {
   String _categoriaSelecionada = 'Alimentação';
   DateTime _dataSelecionada = DateTime.now();
 
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.despesa != null) {
+      _tituloController.text = widget.despesa!.titulo;
+      _valorController.text = widget.despesa!.valor.toString();
+      _categoriaSelecionada = widget.despesa!.categoria;
+      _dataSelecionada = widget.despesa!.data;
+    }
+  }
+
   final List<String> _categorias = [
     'Alimentação',
     'Transporte',
@@ -51,18 +64,34 @@ class _NovaDespesaPageState extends State<NovaDespesaPage> {
     }
   }
 
-  void _salvarDespesa() {
+  void _salvarDespesa() async {
     if (_formKey.currentState!.validate()) {
       String titulo = _tituloController.text;
       double valor = double.parse(_valorController.text.replaceAll(',', '.'));
 
-      // Aqui você pode salvar no banco de dados ou passar de volta para a home
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Despesa "$titulo" salva com sucesso!')),
+      DespesaModel despesa = DespesaModel(
+        widget.despesa?.id, // mantém o id existente se for edição
+        titulo,
+        valor,
+        _categoriaSelecionada,
+        _dataSelecionada,
       );
 
-      Navigator.pop(context); // volta para a tela anterior
+      if (widget.despesa == null) {
+        // Inserir nova despesa
+        await DespesaDAO().adicionar(despesa);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Despesa "$titulo" salva com sucesso!')),
+        );
+      } else {
+        // Atualizar despesa existente
+        await DespesaDAO().atualizar(despesa);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Despesa "$titulo" atualizada com sucesso!')),
+        );
+      }
+
+      Navigator.pop(context);
     }
   }
 
@@ -85,8 +114,11 @@ class _NovaDespesaPageState extends State<NovaDespesaPage> {
                   labelText: 'Título',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Informe o título' : null,
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty
+                            ? 'Informe o título'
+                            : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -114,12 +146,13 @@ class _NovaDespesaPageState extends State<NovaDespesaPage> {
                   labelText: 'Categoria',
                   border: OutlineInputBorder(),
                 ),
-                items: _categorias
-                    .map((cat) => DropdownMenuItem(
-                  value: cat,
-                  child: Text(cat),
-                ))
-                    .toList(),
+                items:
+                    _categorias
+                        .map(
+                          (cat) =>
+                              DropdownMenuItem(value: cat, child: Text(cat)),
+                        )
+                        .toList(),
                 onChanged: (valor) {
                   setState(() {
                     _categoriaSelecionada = valor!;
@@ -145,7 +178,7 @@ class _NovaDespesaPageState extends State<NovaDespesaPage> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(fontSize: 16),
                 ),
-              )
+              ),
             ],
           ),
         ),

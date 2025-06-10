@@ -87,25 +87,29 @@ class _DespesaListState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Últimas Despesas",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
             const SizedBox(height: 10),
             Expanded(
               child: ListView(
-                children: const [
-                  Padding(
+                children: [
+                  const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text("Limites", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),
+                    child: Text("Últimas Despesas", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   ),
-                  GoalCard(category: "Alimentação", maxAmount: 500, spentAmount: 320),
-                  GoalCard(category: "Lazer", maxAmount: 300, spentAmount: 180),
-                  Padding(
+                  _futureBuilderDespesa(),
+
+                  const Text(
+                    "Limites",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+
+                  const GoalCard(category: "Alimentação", maxAmount: 500, spentAmount: 320),
+                  const GoalCard(category: "Lazer", maxAmount: 300, spentAmount: 180),
+
+                  const Padding(
                     padding: EdgeInsets.symmetric(vertical: 22),
-                    child: Text("Meta do mês", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),),
+                    child: Text("Meta do mês", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                   ),
-                  GoalCard(category: "Janeiro", maxAmount: 3000, spentAmount: 500),
+                  const GoalCard(category: "Janeiro", maxAmount: 3000, spentAmount: 500),
                 ],
               ),
             ),
@@ -136,61 +140,49 @@ class _DespesaListState extends State<HomePage> {
 
   Widget _futureBuilderDespesa() {
     return FutureBuilder<List<DespesaModel>>(
-      initialData: const <DespesaModel>[],
       future: DespesaDAO().getDespesa(),
       builder: (context, snapshot) {
         switch (snapshot.connectionState) {
-          case ConnectionState.none:
-            return const Center(child: Text('Sem conexão'));
           case ConnectionState.waiting:
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: const [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Carregando...'),
-                ],
-              ),
-            );
-          case ConnectionState.active:
-            return const Center(child: Text('Conexão ativa...'));
+            return const Center(child: CircularProgressIndicator());
+
           case ConnectionState.done:
             if (snapshot.hasError) {
               return const Center(child: Text('Erro ao carregar os dados.'));
             }
 
-            final List<DespesaModel> despesa = snapshot.data ?? [];
+            final List<DespesaModel> despesas = snapshot.data ?? [];
 
-            if (despesa.isEmpty) {
-              return const Center(child: Text('Nenhum lançamento encontrado.'));
+            if (despesas.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('Nenhuma despesa encontrada.'),
+              );
             }
 
-            return ListView.builder(
-              itemCount: despesa.length,
-              itemBuilder: (context, index) {
-                final DespesaModel d = despesa[index];
+            // Retornando os itens
+            return Column(
+              children: despesas.map((d) {
                 return ItemDespesa(
                   d,
                   onClick: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => NovaDespesaPage(despesa: d,),
-                      ),
-                    ).then((value) {
-                      setState(() {
-                        debugPrint('...........Voltou do editar');
-                      });
-                    });
+                    Navigator.of(context)
+                        .push(MaterialPageRoute(
+                      builder: (context) => NovaDespesaPage(despesa: d),
+                    ))
+                        .then((_) => setState(() {}));
                   },
                 );
-              },
+              }).toList(),
             );
+
+          default:
+            return const SizedBox.shrink();
         }
       },
     );
   }
+
 
 }
 
@@ -209,7 +201,7 @@ class ItemDespesa extends StatelessWidget {
     return ListTile(
       onTap: () => this.onClick(),
       title: Text(this._despesa.titulo),
-      subtitle: Text('Data: ${_despesa.data.day}/${_despesa.data..month}/${_despesa.data..year}'),
+      subtitle: Text('Data: ${_despesa.data.day}/${_despesa.data.month}/${_despesa.data.year}'),
       trailing: Text(
         'R\$ ${this._despesa.valor.toString()}',
       ),
