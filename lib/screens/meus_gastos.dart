@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:app/database/despesa_dao.dart';
+import 'package:app/model/despesa_model.dart';
 
 class MeusGastosPage extends StatefulWidget {
   const MeusGastosPage({super.key});
@@ -8,33 +10,41 @@ class MeusGastosPage extends StatefulWidget {
 }
 
 class _MeusGastosPageState extends State<MeusGastosPage> {
-  String _mesSelecionado = 'Junho';
+  late String _mesSelecionado;
+
+  @override
+  void initState() {
+    super.initState();
+    final mesAtualIndex = DateTime.now().month - 1; // Janeiro = 0
+    _mesSelecionado = meses[mesAtualIndex];
+  }
 
   final List<String> meses = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    'Janeiro',
+    'Fevereiro',
+    'Março',
+    'Abril',
+    'Maio',
+    'Junho',
+    'Julho',
+    'Agosto',
+    'Setembro',
+    'Outubro',
+    'Novembro',
+    'Dezembro',
   ];
 
-  final Map<String, List<Map<String, dynamic>>> gastosPorMes = {
-    'Junho': [
-      {'titulo': 'Mercado', 'valor': 120.0, 'data': '01/06/2025'},
-      {'titulo': 'Transporte', 'valor': 40.0, 'data': '02/06/2025'},
-    ],
-    'Maio': [
-      {'titulo': 'Restaurante', 'valor': 70.0, 'data': '28/05/2025'},
-      {'titulo': 'Cinema', 'valor': 30.0, 'data': '25/05/2025'},
-    ],
-  };
+  Future<List<DespesaModel>> _buscarDespesasDoMes(String mes) async {
+    final todasDespesas = await DespesaDAO().getDespesa();
+    final int indexMes = meses.indexOf(mes) + 1;
+
+    return todasDespesas.where((despesa) {
+      return despesa.data.month == indexMes;
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
-    List<Map<String, dynamic>> gastos = gastosPorMes[_mesSelecionado] ?? [];
-
-    double totalGasto = gastos.fold(
-      0.0,
-          (soma, item) => soma + (item['valor'] as double),
-    );
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meus Gastos'),
@@ -61,52 +71,83 @@ class _MeusGastosPageState extends State<MeusGastosPage> {
                       });
                     }
                   },
-                  items: meses.map((String mes) {
-                    return DropdownMenuItem<String>(
-                      value: mes,
-                      child: Text(mes),
-                    );
-                  }).toList(),
+                  items:
+                      meses.map((String mes) {
+                        return DropdownMenuItem<String>(
+                          value: mes,
+                          child: Text(mes),
+                        );
+                      }).toList(),
                 ),
               ],
             ),
             const SizedBox(height: 16),
 
-            // Total gasto no mês
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Total gasto em $_mesSelecionado: R\$ ${totalGasto.toStringAsFixed(2)}",
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Lista de gastos
+            // Lista de gastos com FutureBuilder
             Expanded(
-              child: gastos.isEmpty
-                  ? const Center(child: Text("Nenhum gasto encontrado."))
-                  : ListView.builder(
-                itemCount: gastos.length,
-                itemBuilder: (context, index) {
-                  final gasto = gastos[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    child: ListTile(
-                      title: Text(gasto['titulo']),
-                      subtitle: Text(gasto['data']),
-                      trailing: Text(
-                        "R\$ ${gasto['valor'].toStringAsFixed(2)}",
+              child: FutureBuilder<List<DespesaModel>>(
+                future: _buscarDespesasDoMes(_mesSelecionado),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return const Center(
+                      child: Text("Erro ao carregar os dados."),
+                    );
+                  }
+
+                  final despesas = snapshot.data ?? [];
+
+                  if (despesas.isEmpty) {
+                    return const Center(
+                      child: Text("Nenhum gasto encontrado."),
+                    );
+                  }
+
+                  final total = despesas.fold(
+                    0.0,
+                    (soma, item) => soma + item.valor,
+                  );
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Total gasto em $_mesSelecionado: R\$ ${total.toStringAsFixed(2)}",
                         style: const TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.red,
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: despesas.length,
+                          itemBuilder: (context, index) {
+                            final d = despesas[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              child: ListTile(
+                                title: Text(d.titulo),
+                                subtitle: Text(
+                                  '${d.data.day.toString().padLeft(2, '0')}/${d.data.month.toString().padLeft(2, '0')}/${d.data.year}',
+                                ),
+                                trailing: Text(
+                                  "R\$ ${d.valor.toStringAsFixed(2)}",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),
