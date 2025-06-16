@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../database/meta_dao.dart';
+import '../model/meta_model.dart';
 
 class MetasPage extends StatefulWidget {
   const MetasPage({super.key});
@@ -8,37 +10,67 @@ class MetasPage extends StatefulWidget {
 }
 
 class _MetasPageState extends State<MetasPage> {
-  final List<Map<String, dynamic>> metas = [
-    {'categoria': 'Alimentação', 'valor': 500.0},
-    {'categoria': 'Lazer', 'valor': 300.0},
+  final MetaDAO _metaDAO = MetaDAO();
+  List<MetaModel> metas = [];
+  bool _isLoading = true;
+
+  final List<String> meses = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
   ];
-
-  final TextEditingController categoriaController = TextEditingController();
   final TextEditingController valorController = TextEditingController();
+  String? mesSelecionado;
+  int anoSelecionado = DateTime.now().year;
 
-  void _adicionarOuEditarMeta({int? index}) {
-    if (index != null) {
-      categoriaController.text = metas[index]['categoria'];
-      valorController.text = metas[index]['valor'].toString();
+  @override
+  void initState() {
+    super.initState();
+    _carregarMetas();
+  }
+
+  Future<void> _carregarMetas() async {
+    setState(() => _isLoading = true);
+    metas = await _metaDAO.getMetas();
+    setState(() => _isLoading = false);
+  }
+
+  void _abrirFormulario({MetaModel? meta}) {
+    if (meta != null) {
+      mesSelecionado = meta.mes;
+      anoSelecionado = meta.ano;
+      valorController.text = meta.valor.toString();
     } else {
-      categoriaController.clear();
+      mesSelecionado = null;
+      anoSelecionado = DateTime.now().year;
       valorController.clear();
     }
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(index != null ? 'Editar Meta' : 'Nova Meta'),
+        title: Text(meta != null ? 'Editar Meta' : 'Nova Meta'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            DropdownButtonFormField<String>(
+              value: mesSelecionado,
+              items: meses.map((mes) => DropdownMenuItem(value: mes, child: Text(mes))).toList(),
+              decoration: const InputDecoration(labelText: 'Mês'),
+              onChanged: (valor) {
+                setState(() {
+                  mesSelecionado = valor;
+                });
+              },
+            ),
             TextField(
-              controller: categoriaController,
-              decoration: const InputDecoration(labelText: 'Categoria'),
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Ano'),
+              controller: TextEditingController(text: anoSelecionado.toString()),
+              onChanged: (val) => anoSelecionado = int.tryParse(val) ?? DateTime.now().year,
             ),
             TextField(
               controller: valorController,
-              decoration: const InputDecoration(labelText: 'Valor'),
+              decoration: const InputDecoration(labelText: 'Valor da Meta'),
               keyboardType: TextInputType.number,
             ),
           ],
@@ -49,18 +81,22 @@ class _MetasPageState extends State<MetasPage> {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () {
-              final categoria = categoriaController.text;
-              final valor = double.tryParse(valorController.text) ?? 0.0;
+            onPressed: () async {
+              if (mesSelecionado != null && double.tryParse(valorController.text) != null) {
+                final novaMeta = MetaModel(
+                  meta?.id,
+                  mesSelecionado!,
+                  anoSelecionado,
+                  double.parse(valorController.text),
+                );
 
-              if (categoria.isNotEmpty && valor > 0) {
-                setState(() {
-                  if (index != null) {
-                    metas[index] = {'categoria': categoria, 'valor': valor};
-                  } else {
-                    metas.add({'categoria': categoria, 'valor': valor});
-                  }
-                });
+                if (meta == null) {
+                  await _metaDAO.adicionar(novaMeta);
+                } else {
+                  await _metaDAO.atualizar(novaMeta);
+                }
+
+                await _carregarMetas();
                 Navigator.pop(context);
               }
             },
@@ -71,22 +107,18 @@ class _MetasPageState extends State<MetasPage> {
     );
   }
 
-  void _removerMeta(int index) {
+  void _removerMeta(int id) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Confirmar Exclusão'),
+        title: const Text('Excluir Meta'),
         content: const Text('Deseja realmente excluir esta meta?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                metas.removeAt(index);
-              });
+            onPressed: () async {
+              await _metaDAO.deletar(id);
+              await _carregarMetas();
               Navigator.pop(context);
             },
             child: const Text('Excluir'),
@@ -97,13 +129,21 @@ class _MetasPageState extends State<MetasPage> {
   }
 
   @override
+  void dispose() {
+    valorController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Metas'),
+        title: const Text('Metas Mensais'),
         backgroundColor: Colors.green[600],
       ),
-      body: metas.isEmpty
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : metas.isEmpty
           ? const Center(child: Text('Nenhuma meta cadastrada.'))
           : ListView.builder(
         itemCount: metas.length,
@@ -112,18 +152,18 @@ class _MetasPageState extends State<MetasPage> {
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ListTile(
-              title: Text(meta['categoria']),
-              subtitle: Text('Meta: R\$ ${meta['valor'].toStringAsFixed(2)}'),
+              title: Text('${meta.mes} ${meta.ano}'),
+              subtitle: Text('Meta: R\$ ${meta.valor.toStringAsFixed(2)}'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
                     icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () => _adicionarOuEditarMeta(index: index),
+                    onPressed: () => _abrirFormulario(meta: meta),
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _removerMeta(index),
+                    onPressed: () => _removerMeta(meta.id!),
                   ),
                 ],
               ),
@@ -132,10 +172,9 @@ class _MetasPageState extends State<MetasPage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _adicionarOuEditarMeta(),
+        onPressed: () => _abrirFormulario(),
         backgroundColor: Colors.green[600],
         child: const Icon(Icons.add),
-        tooltip: 'Adicionar nova meta',
       ),
     );
   }

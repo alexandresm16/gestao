@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:app/database/despesa_dao.dart';
 import 'package:app/model/despesa_model.dart';
 
+import 'despesas.dart';
+
 class MeusGastosPage extends StatefulWidget {
   const MeusGastosPage({super.key});
 
@@ -54,6 +56,17 @@ class _MeusGastosPageState extends State<MeusGastosPage> {
       appBar: AppBar(
         title: const Text('Meus Gastos'),
         backgroundColor: Colors.green[600],
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.green[600],
+        child: const Icon(Icons.add),
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => NovaDespesaPage()),
+          );
+          setState(() {}); // Atualiza a lista ao voltar
+        },
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -139,16 +152,40 @@ class _MeusGastosPageState extends State<MeusGastosPage> {
                             return Card(
                               margin: const EdgeInsets.symmetric(vertical: 8),
                               child: ListTile(
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (_) => NovaDespesaPage(despesa: d),
+                                    ),
+                                  );
+                                  setState(
+                                    () {},
+                                  ); // Atualiza ao voltar da edição
+                                },
                                 title: Text(d.titulo),
                                 subtitle: Text(
                                   '${d.data.day.toString().padLeft(2, '0')}/${d.data.month.toString().padLeft(2, '0')}/${d.data.year}',
                                 ),
-                                trailing: Text(
-                                  "R\$ ${d.valor.toStringAsFixed(2)}",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.red,
-                                  ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "R\$ ${d.valor.toStringAsFixed(2)}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () => _confirmarExclusao(d),
+                                    ),
+                                  ],
                                 ),
                               ),
                             );
@@ -163,6 +200,31 @@ class _MeusGastosPageState extends State<MeusGastosPage> {
           ],
         ),
       ),
+    );
+  }
+
+  void _confirmarExclusao(DespesaModel despesa) {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Excluir Despesa'),
+            content: const Text('Deseja realmente excluir esta despesa?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  await DespesaDAO().deletar(despesa.id!);
+                  Navigator.pop(context);
+                  setState(() {}); // Atualiza a tela
+                },
+                child: const Text('Excluir'),
+              ),
+            ],
+          ),
     );
   }
 }
