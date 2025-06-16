@@ -201,21 +201,32 @@ class _HomePageState extends State<HomePage> {
                         final int anoAtual = agora.year;
 
                         final metaDoMes = metas.firstWhere(
-                              (meta) => meta.mes == mesAtual && meta.ano == anoAtual,
-                          orElse: () => MetaModel(null, mesAtual, anoAtual, 0.0),
+                          (meta) =>
+                              meta.mes == mesAtual && meta.ano == anoAtual,
+                          orElse:
+                              () => MetaModel(null, mesAtual, anoAtual, 0.0),
                         );
 
                         return FutureBuilder<List<DespesaModel>>(
-                          future: DespesaDAO().getDespesaPorMes(agora.month, agora.year),
+                          future: DespesaDAO().getDespesaPorMes(
+                            agora.month,
+                            agora.year,
+                          ),
                           builder: (context, despesaSnapshot) {
-                            if (despesaSnapshot.connectionState == ConnectionState.waiting) {
+                            if (despesaSnapshot.connectionState ==
+                                ConnectionState.waiting) {
                               return const CircularProgressIndicator();
                             } else if (despesaSnapshot.hasError) {
-                              return const Text('Erro ao carregar as despesas.');
+                              return const Text(
+                                'Erro ao carregar as despesas.',
+                              );
                             }
 
                             final despesas = despesaSnapshot.data ?? [];
-                            final totalGasto = despesas.fold<double>(0.0, (sum, d) => sum + d.valor);
+                            final totalGasto = despesas.fold<double>(
+                              0.0,
+                              (sum, d) => sum + d.valor,
+                            );
 
                             return GoalCard(
                               category: '${metaDoMes.mes} ${metaDoMes.ano}',
@@ -227,7 +238,6 @@ class _HomePageState extends State<HomePage> {
                       }
                     },
                   ),
-
                 ],
               ),
             ),
@@ -306,8 +316,18 @@ class _HomePageState extends State<HomePage> {
 
 String _nomeDoMes(int numeroMes) {
   const meses = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    'Janeiro',
+    'Fevereiro',
+    'Março',
+    'Abril',
+    'Maio',
+    'Junho',
+    'Julho',
+    'Agosto',
+    'Setembro',
+    'Outubro',
+    'Novembro',
+    'Dezembro',
   ];
   return meses[numeroMes - 1];
 }
@@ -322,7 +342,17 @@ class ItemDespesa extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       onTap: () => this.onClick(),
-      title: Text(this._despesa.titulo),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(this._despesa.titulo,
+            style: TextStyle(fontSize: 16, color: Colors.black),),
+          Text(
+            this._despesa.categoria,
+            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+          ),
+        ],
+      ),
       subtitle: Text(
         'Data: ${_despesa.data.day}/${_despesa.data.month}/${_despesa.data.year}',
       ),
