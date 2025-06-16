@@ -10,15 +10,6 @@ class MeusGastosPage extends StatefulWidget {
 }
 
 class _MeusGastosPageState extends State<MeusGastosPage> {
-  late String _mesSelecionado;
-
-  @override
-  void initState() {
-    super.initState();
-    final mesAtualIndex = DateTime.now().month - 1; // Janeiro = 0
-    _mesSelecionado = meses[mesAtualIndex];
-  }
-
   final List<String> meses = [
     'Janeiro',
     'Fevereiro',
@@ -34,12 +25,26 @@ class _MeusGastosPageState extends State<MeusGastosPage> {
     'Dezembro',
   ];
 
-  Future<List<DespesaModel>> _buscarDespesasDoMes(String mes) async {
+  late String _mesSelecionado;
+  late int _anoSelecionado;
+
+  @override
+  void initState() {
+    super.initState();
+    final agora = DateTime.now();
+    _mesSelecionado = meses[agora.month - 1];
+    _anoSelecionado = agora.year;
+  }
+
+  Future<List<DespesaModel>> _buscarDespesasPorMesEAno(
+    String mes,
+    int ano,
+  ) async {
     final todasDespesas = await DespesaDAO().getDespesa();
     final int indexMes = meses.indexOf(mes) + 1;
 
     return todasDespesas.where((despesa) {
-      return despesa.data.month == indexMes;
+      return despesa.data.month == indexMes && despesa.data.year == ano;
     }).toList();
   }
 
@@ -86,7 +91,10 @@ class _MeusGastosPageState extends State<MeusGastosPage> {
             // Lista de gastos com FutureBuilder
             Expanded(
               child: FutureBuilder<List<DespesaModel>>(
-                future: _buscarDespesasDoMes(_mesSelecionado),
+                future: _buscarDespesasPorMesEAno(
+                  _mesSelecionado,
+                  _anoSelecionado,
+                ),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
