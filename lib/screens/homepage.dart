@@ -55,6 +55,7 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.add),
               title: const Text('Lançar Gastos'),
               onTap: () {
+                Navigator.pop(context); // Fecha o Drawer
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => NovaDespesaPage()),
@@ -65,9 +66,14 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.list),
               title: const Text('Meus Gastos'),
               onTap: () {
+                Navigator.pop(context); // Fecha o Drawer
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const MeusGastosPage()),
+                ).then(
+                      (_) => setState(() {
+                    _loadData();
+                  }),
                 );
               },
             ),
@@ -75,9 +81,14 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.speed),
               title: const Text('Limites'),
               onTap: () {
+                Navigator.pop(context); // Fecha o Drawer
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const LimitesPage()),
+                ).then(
+                      (_) => setState(() {
+                    _loadData();
+                  }),
                 );
               },
             ),
@@ -85,9 +96,14 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.flag),
               title: const Text('Metas'),
               onTap: () {
+                Navigator.pop(context); // Fecha o Drawer
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const MetasPage()),
+                ).then(
+                      (_) => setState(() {
+                    _loadData();
+                  }),
                 );
               },
             ),
