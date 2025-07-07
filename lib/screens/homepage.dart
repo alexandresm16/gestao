@@ -71,7 +71,7 @@ class _HomePageState extends State<HomePage> {
                   context,
                   MaterialPageRoute(builder: (_) => const MeusGastosPage()),
                 ).then(
-                      (_) => setState(() {
+                  (_) => setState(() {
                     _loadData();
                   }),
                 );
@@ -86,7 +86,7 @@ class _HomePageState extends State<HomePage> {
                   context,
                   MaterialPageRoute(builder: (_) => const LimitesPage()),
                 ).then(
-                      (_) => setState(() {
+                  (_) => setState(() {
                     _loadData();
                   }),
                 );
@@ -101,7 +101,7 @@ class _HomePageState extends State<HomePage> {
                   context,
                   MaterialPageRoute(builder: (_) => const MetasPage()),
                 ).then(
-                      (_) => setState(() {
+                  (_) => setState(() {
                     _loadData();
                   }),
                 );
@@ -141,54 +141,23 @@ class _HomePageState extends State<HomePage> {
 
                   // Limites
                   FutureBuilder<List<LimiteModel>>(
-                    future: LimiteDAO().getLimites(),
+                    future: _futureLimites,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       } else if (snapshot.hasError) {
-                        return const Center(
-                          child: Text('Erro ao carregar limites.'),
-                        );
+                        return const Text('Erro ao carregar limites.');
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                         return const Text('Nenhum limite cadastrado.');
                       } else {
                         final limites = snapshot.data!;
+
                         return Column(
                           children:
                               limites.map((limite) {
-                                return FutureBuilder<List<DespesaModel>>(
-                                  future: DespesaDAO().getDespesaPorCategoria(
-                                    limite.tipo,
-                                  ),
-                                  builder: (context, despesaSnapshot) {
-                                    if (despesaSnapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return const SizedBox(
-                                        height: 80,
-                                        child: Center(
-                                          child: CircularProgressIndicator(),
-                                        ),
-                                      );
-                                    } else if (despesaSnapshot.hasError) {
-                                      return const Text(
-                                        'Erro ao carregar despesas.',
-                                      );
-                                    } else {
-                                      final despesas =
-                                          despesaSnapshot.data ?? [];
-                                      final gastoTotal = despesas.fold<double>(
-                                        0.0,
-                                        (sum, d) => sum + d.valor,
-                                      );
-
-                                      return GoalCard(
-                                        category: limite.tipo,
-                                        maxAmount: limite.valor,
-                                        spentAmount: gastoTotal,
-                                      );
-                                    }
-                                  },
-                                );
+                                return _futureBuilderLimite(
+                                  limite,
+                                ); // passando o parâmetro
                               }).toList(),
                         );
                       }
@@ -202,6 +171,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 16),
 
+                  // Metas
                   FutureBuilder<List<MetaModel>>(
                     future: MetaDAO().getMetas(),
                     builder: (context, snapshot) {
@@ -209,8 +179,10 @@ class _HomePageState extends State<HomePage> {
                         return const Center(child: CircularProgressIndicator());
                       } else if (snapshot.hasError) {
                         return const Text('Erro ao carregar a meta.');
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Text('Nenhuma meta cadastrada.');
                       } else {
-                        final metas = snapshot.data ?? [];
+                        final metas = snapshot.data!;
 
                         final DateTime agora = DateTime.now();
                         final String mesAtual = _nomeDoMes(agora.month);
@@ -219,38 +191,9 @@ class _HomePageState extends State<HomePage> {
                         final metaDoMes = metas.firstWhere(
                           (meta) =>
                               meta.mes == mesAtual && meta.ano == anoAtual,
-                          orElse:
-                              () => MetaModel(null, mesAtual, anoAtual, 0.0),
                         );
 
-                        return FutureBuilder<List<DespesaModel>>(
-                          future: DespesaDAO().getDespesaPorMes(
-                            agora.month,
-                            agora.year,
-                          ),
-                          builder: (context, despesaSnapshot) {
-                            if (despesaSnapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const CircularProgressIndicator();
-                            } else if (despesaSnapshot.hasError) {
-                              return const Text(
-                                'Erro ao carregar as despesas.',
-                              );
-                            }
-
-                            final despesas = despesaSnapshot.data ?? [];
-                            final totalGasto = despesas.fold<double>(
-                              0.0,
-                              (sum, d) => sum + d.valor,
-                            );
-
-                            return GoalCard(
-                              category: '${metaDoMes.mes} ${metaDoMes.ano}',
-                              maxAmount: metaDoMes.valor,
-                              spentAmount: totalGasto,
-                            );
-                          },
-                        );
+                        return _futureBuilderMeta(metaDoMes, agora);
                       }
                     },
                   ),
@@ -330,6 +273,56 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+Widget _futureBuilderLimite(LimiteModel limite) {
+  return FutureBuilder<List<DespesaModel>>(
+    future: DespesaDAO().getDespesaPorCategoria(limite.tipo),
+    builder: (context, despesaSnapshot) {
+      if (despesaSnapshot.connectionState == ConnectionState.waiting) {
+        return const SizedBox(
+          height: 80,
+          child: Center(child: CircularProgressIndicator()),
+        );
+      } else if (despesaSnapshot.hasError) {
+        return const Text('Erro ao carregar despesas.');
+      } else {
+        final despesas = despesaSnapshot.data ?? [];
+        final gastoTotal = despesas.fold<double>(
+          0.0,
+          (sum, d) => sum + d.valor,
+        );
+
+        return GoalCard(
+          category: limite.tipo,
+          maxAmount: limite.valor,
+          spentAmount: gastoTotal,
+        );
+      }
+    },
+  );
+}
+
+Widget _futureBuilderMeta(MetaModel metaDoMes, DateTime agora) {
+  return FutureBuilder<List<DespesaModel>>(
+    future: DespesaDAO().getDespesaPorMes(agora.month, agora.year),
+    builder: (context, despesaSnapshot) {
+      if (despesaSnapshot.connectionState == ConnectionState.waiting) {
+        return const CircularProgressIndicator();
+      } else if (despesaSnapshot.hasError) {
+        return const Text('Erro ao carregar as despesas.');
+      }
+
+      final despesas = despesaSnapshot.data ?? [];
+      final totalGasto = despesas.fold<double>(0.0, (sum, d) => sum + d.valor);
+
+      return GoalCard(
+        category: '${metaDoMes.mes} ${metaDoMes.ano}',
+        maxAmount: metaDoMes.valor,
+        spentAmount: totalGasto,
+      );
+    },
+  );
+}
+
 String _nomeDoMes(int numeroMes) {
   const meses = [
     'Janeiro',
@@ -361,18 +354,27 @@ class ItemDespesa extends StatelessWidget {
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(this._despesa.titulo,
-            style: TextStyle(fontSize: 16, color: Colors.black),),
+          Text(
+            this._despesa.titulo,
+            style: TextStyle(fontSize: 16, color: Colors.black),
+          ),
           Text(
             this._despesa.categoria,
-            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            style: TextStyle(fontSize: 14, color: Colors.grey[700]),
           ),
         ],
       ),
       subtitle: Text(
         'Data: ${_despesa.data.day}/${_despesa.data.month}/${_despesa.data.year}',
       ),
-      trailing: Text('R\$ ${this._despesa.valor.toStringAsFixed(2)}'),
+      trailing: Text(
+        'R\$ ${this._despesa.valor.toStringAsFixed(2)}',
+        style: TextStyle(
+          fontSize: 14,
+          color: Colors.deepOrangeAccent, // Cor desejada
+          fontWeight: FontWeight.bold, // Opcional, só para destacar mais
+        ),
+      ),
     );
   }
 }

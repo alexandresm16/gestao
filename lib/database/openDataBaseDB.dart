@@ -3,7 +3,7 @@ import 'package:sqflite/sqflite.dart';
 
 import 'despesa_dao.dart';
 import 'limite_dao.dart';
-import 'meta_dao.dart';  // Importa para pegar o sqlTabelaLimite
+import 'meta_dao.dart';
 
 Future<Database> getDatabase() async {
   final String path = join(await getDatabasesPath(), 'dbgestao1.db');
