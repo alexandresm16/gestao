@@ -188,12 +188,18 @@ class _HomePageState extends State<HomePage> {
                         final String mesAtual = _nomeDoMes(agora.month);
                         final int anoAtual = agora.year;
 
-                        final metaDoMes = metas.firstWhere(
-                          (meta) =>
-                              meta.mes == mesAtual && meta.ano == anoAtual,
+                        final metasDoMes = metas.where(
+                              (meta) => meta.mes == mesAtual && meta.ano == anoAtual,
                         );
 
+                        if (metasDoMes.isEmpty) {
+                          return const Text('Nenhuma meta definida para este mês.');
+                        }
+
+                        final metaDoMes = metasDoMes.first;
+
                         return _futureBuilderMeta(metaDoMes, agora);
+
                       }
                     },
                   ),
